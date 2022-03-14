@@ -30,6 +30,12 @@ namespace DoorbellApi.Controllers
             return _alerts;
         }
 
+        [HttpGet("new")]
+        public ActionResult<List<AlertItem>> GetNew()
+        {
+            return _alerts.Where(a => !a.Approved && !a.Declined).ToList();
+        }
+
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<AlertItem> Get(int id)
@@ -71,9 +77,25 @@ namespace DoorbellApi.Controllers
             return CreatedAtAction(nameof(Get), new { id = alert.ID }, alert);
         }
 
+        [HttpPut]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult<AlertItem> Put(AlertItem alert)
+        {
+            if (_alerts.Any(a => a.ID == alert.ID))
+            {
+                _alerts[_alerts.IndexOf(_alerts.Where(a => a.ID == alert.ID).First())] = alert;
+                return AcceptedAtAction(nameof(Get), new { id = alert.ID }, alert);
+            }
+            else
+            {
+                return NotFound();
+            }
+        }
+
         private async void SaveToFile(AlertItem alert)
         {
-            await using FileStream oFs = System.IO.File.Open($"alertitems{alert.ID}.txt", FileMode.OpenOrCreate);
+            await using FileStream oFs = System.IO.File.Open($"./archive/alertitems{alert.ID}.txt", FileMode.OpenOrCreate);
             await JsonSerializer.SerializeAsync(oFs, alert);
         }
     }
